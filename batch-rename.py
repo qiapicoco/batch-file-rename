@@ -220,12 +220,15 @@ def clear_selection():
 root = tk.Tk()
 root.title("批量文件重命名")
 root.option_add("*Font", "微软雅黑 10")
-root.geometry("800x600")
+root.geometry("1200x600")  # 增大窗口宽度以容纳说明区
 root.configure(bg="#f0f0f0")
 
-# 功能区
+# 左侧功能区
 frame_function = ttk.Frame(root, padding="20")
-frame_function.grid(row=0, column=0, sticky=(tk.W, tk.E))
+frame_function.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
+root.rowconfigure(0, weight=1)
+root.columnconfigure(0, weight=2)
+
 tk.Label(frame_function, text="选择文件目录:").grid(row=0, column=0, sticky=tk.W)
 entry_directory = ttk.Entry(frame_function, width=30)
 entry_directory.grid(row=0, column=1, sticky=(tk.W, tk.E), padx=5)
@@ -249,10 +252,10 @@ extension_combobox.grid(row=2, column=1, sticky=(tk.W, tk.E), padx=5)
 extension_combobox.bind("<<ComboboxSelected>>", lambda event: filter_files(extension_var.get()))
 
 # 文件显示区
-frame_tree = ttk.Frame(root, padding="20")
-frame_tree.grid(row=1, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
-root.rowconfigure(1, weight=1)
-root.columnconfigure(0, weight=1)
+frame_tree = ttk.Frame(frame_function, padding="20")
+frame_tree.grid(row=3, column=0, columnspan=3, sticky=(tk.W, tk.E, tk.N, tk.S))
+frame_function.rowconfigure(3, weight=1)
+frame_function.columnconfigure(0, weight=1)
 
 columns = ("序号", "扩展名", "文件名")
 # 创建 Treeview 时使用 style
@@ -276,8 +279,8 @@ frame_tree.rowconfigure(0, weight=1)
 frame_tree.columnconfigure(0, weight=1)
 
 # 选择操作按钮区
-frame_selection_buttons = ttk.Frame(root, padding="10")
-frame_selection_buttons.grid(row=2, column=0, sticky=(tk.W, tk.E))
+frame_selection_buttons = ttk.Frame(frame_function, padding="10")
+frame_selection_buttons.grid(row=4, column=0, columnspan=3, sticky=(tk.W, tk.E))
 button_select_all = ttk.Button(frame_selection_buttons, text="全选", command=select_all)
 button_select_all.pack(side=tk.LEFT, padx=5)
 button_invert_selection = ttk.Button(frame_selection_buttons, text="反选", command=invert_selection)
@@ -286,15 +289,59 @@ button_clear_selection = ttk.Button(frame_selection_buttons, text="清空", comm
 button_clear_selection.pack(side=tk.LEFT, padx=5)
 
 # 批量操作按钮区
-frame_buttons = ttk.Frame(root, padding="20")
-frame_buttons.grid(row=3, column=0, pady=10, sticky=tk.S)
+frame_buttons = ttk.Frame(frame_function, padding="20")
+frame_buttons.grid(row=5, column=0, columnspan=3, pady=10, sticky=tk.S)
 button_change_extension = ttk.Button(frame_buttons, text="批量修改扩展名", command=batch_change_extension)
 button_change_extension.pack(side=tk.LEFT, padx=5)
 button_rename_file_names = ttk.Button(frame_buttons, text="批量修改文件名", command=batch_rename_file_names)
 button_rename_file_names.pack(side=tk.LEFT, padx=5)
 
+# 分割线
+separator = ttk.Separator(root, orient=tk.VERTICAL)
+separator.grid(row=0, column=1, sticky=(tk.N, tk.S))
+
+# 右侧说明区
+frame_instructions = ttk.Frame(root, padding="20")
+frame_instructions.grid(row=0, column=2, sticky=(tk.W, tk.E, tk.N, tk.S))
+root.columnconfigure(2, weight=1)
+
+instructions_text = """
+使用步骤说明：
+
+1. 选择文件目录：
+   - 点击“浏览”按钮，选择包含需要重命名文件的文件夹。
+   
+   - 也可以直接在输入框中输入文件夹路径，然后按回车键确认。
+   
+2. 筛选文件：
+   - 使用“筛选扩展名”下拉框，选择要处理的文件扩展名。
+   
+   - 选择“所有”将显示所有文件。
+   
+3. 选择文件：
+   - 在文件列表中，使用“全选”、“反选”或“清空”按钮来选择需要重命名或修改扩展名的文件。
+   
+4. 批量修改扩展名：
+   - 选择需要修改扩展名的文件后，点击“批量修改扩展名”按钮。
+   
+   - 在弹出的输入框中输入新的文件扩展名（不包含点号），然后点击“确定”。
+   
+5. 批量修改文件名：
+   - 选择需要重命名的文件后，点击“批量修改文件名”按钮。
+   
+   - 在弹出的输入框中输入第一个新文件名，格式为“前缀_数字”（例如：图片_1），然后点击“确定”。
+   
+   - 程序将按照相同扩展名的文件依次递增数字进行重命名。
+"""
+instructions_label = tk.Label(frame_instructions, text=instructions_text, justify=tk.LEFT, anchor=tk.NW)
+instructions_label.pack(fill=tk.BOTH, expand=True)
+
 all_files_data = []
 selected_items = []
 
 # 运行主循环
-root.mainloop()
+try:
+    root.mainloop()
+except KeyboardInterrupt:
+    print("程序已被手动中断。")
+    root.destroy()  # 确保窗口被正确销毁
