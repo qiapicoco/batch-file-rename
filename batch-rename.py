@@ -86,20 +86,25 @@ def filter_files(selected_extension):
         tree.delete(item)
     selected_items = []
 
+    filtered_files = []
     if selected_extension == "所有":
-        for ext, name in all_files_data:
-            add_item_to_tree(ext, name)
+        filtered_files = all_files_data
     else:
         for ext, name in all_files_data:
             if ext == selected_extension:
-                add_item_to_tree(ext, name)
+                filtered_files.append((ext, name))
 
+    for index, (ext, name) in enumerate(filtered_files, start=1):
+        add_item_to_tree(index, ext, name)
+
+    # 固定“序号”列宽
+    tree.column("序号", width=50, anchor=tk.CENTER)
     # 固定“扩展名”列宽
     tree.column("扩展名", width=100, anchor=tk.CENTER)
 
 
-def add_item_to_tree(ext, name):
-    item = tree.insert("", "end", values=(ext, name))
+def add_item_to_tree(index, ext, name):
+    item = tree.insert("", "end", values=(index, ext, name))
     tree.item(item, tags=(item,))
 
 
@@ -107,7 +112,7 @@ def get_selected_items():
     selected = []
     for item in tree.selection():
         values = tree.item(item, "values")
-        path = os.path.join(entry_directory.get(), values[1])
+        path = os.path.join(entry_directory.get(), values[2])
         selected.append(path)
     return selected
 
@@ -117,21 +122,27 @@ def batch_change_extension():
     if not selected:
         messagebox.showwarning("警告", "请选择要修改扩展名的文件！")
         return
+    folders_selected = [item for item in selected if os.path.isdir(item)]
+    if folders_selected:
+        folder_names = ", ".join([os.path.basename(folder) for folder in folders_selected])
+        messagebox.showerror("错误", f"你选择了文件夹：{folder_names}，文件夹不允许修改扩展名，请重新选择文件。")
+        return
     new_ext = simpledialog.askstring("输入新扩展名", "请输入新的文件扩展名（不包含点号）：")
     if new_ext:
         new_ext = "." + new_ext
         for item in selected:
-            base_name, _ = os.path.splitext(os.path.basename(item))
-            new_file_path = os.path.join(os.path.dirname(item), base_name + new_ext)
-            try:
-                os.rename(item, new_file_path)
-                print(f"Renamed {item} to {new_file_path}")
-            except FileNotFoundError:
-                messagebox.showerror("错误", f"文件 {item} 未找到！")
-            except PermissionError:
-                messagebox.showerror("错误", f"没有权限修改文件 {item}！")
-            except Exception as e:
-                messagebox.showerror("错误", f"发生了一个未知错误: {e}")
+            if os.path.isfile(item):  # 仅处理文件
+                base_name, _ = os.path.splitext(os.path.basename(item))
+                new_file_path = os.path.join(os.path.dirname(item), base_name + new_ext)
+                try:
+                    os.rename(item, new_file_path)
+                    print(f"Renamed {item} to {new_file_path}")
+                except FileNotFoundError:
+                    messagebox.showerror("错误", f"文件 {item} 未找到！")
+                except PermissionError:
+                    messagebox.showerror("错误", f"没有权限修改文件 {item}！")
+                except Exception as e:
+                    messagebox.showerror("错误", f"发生了一个未知错误: {e}")
         messagebox.showinfo("成功", "文件扩展名修改完成！")
         open_folder(entry_directory.get())
         list_files(entry_directory.get())
@@ -142,65 +153,45 @@ def batch_rename_file_names():
     if not selected:
         messagebox.showwarning("警告", "请选择要重命名的文件！")
         return
-    option = simpledialog.askstring("选择重命名方式", "请选择重命名方式（1: 添加前缀；2: 添加后缀；3: 替换特定字符）：")
-    if option == "1":
-        prefix = simpledialog.askstring("输入前缀", "请输入要添加的前缀：")
-        if prefix:
-            for item in selected:
-                base_name, ext = os.path.splitext(os.path.basename(item))
-                new_file_path = os.path.join(os.path.dirname(item), prefix + base_name + ext)
-                try:
-                    os.rename(item, new_file_path)
-                    print(f"Renamed {item} to {new_file_path}")
-                except FileNotFoundError:
-                    messagebox.showerror("错误", f"文件 {item} 未找到！")
-                except PermissionError:
-                    messagebox.showerror("错误", f"没有权限修改文件 {item}！")
-                except Exception as e:
-                    messagebox.showerror("错误", f"发生了一个未知错误: {e}")
-            messagebox.showinfo("成功", "文件名重命名完成！")
-            open_folder(entry_directory.get())
-            list_files(entry_directory.get())
-    elif option == "2":
-        suffix = simpledialog.askstring("输入后缀", "请输入要添加的后缀：")
-        if suffix:
-            for item in selected:
-                base_name, ext = os.path.splitext(os.path.basename(item))
-                new_file_path = os.path.join(os.path.dirname(item), base_name + suffix + ext)
-                try:
-                    os.rename(item, new_file_path)
-                    print(f"Renamed {item} to {new_file_path}")
-                except FileNotFoundError:
-                    messagebox.showerror("错误", f"文件 {item} 未找到！")
-                except PermissionError:
-                    messagebox.showerror("错误", f"没有权限修改文件 {item}！")
-                except Exception as e:
-                    messagebox.showerror("错误", f"发生了一个未知错误: {e}")
-            messagebox.showinfo("成功", "文件名重命名完成！")
-            open_folder(entry_directory.get())
-            list_files(entry_directory.get())
-    elif option == "3":
-        old_str = simpledialog.askstring("输入要替换的字符", "请输入要替换的字符：")
-        new_str = simpledialog.askstring("输入替换后的字符", "请输入替换后的字符：")
-        if old_str and new_str:
-            for item in selected:
-                base_name, ext = os.path.splitext(os.path.basename(item))
-                new_base_name = base_name.replace(old_str, new_str)
-                new_file_path = os.path.join(os.path.dirname(item), new_base_name + ext)
-                try:
-                    os.rename(item, new_file_path)
-                    print(f"Renamed {item} to {new_file_path}")
-                except FileNotFoundError:
-                    messagebox.showerror("错误", f"文件 {item} 未找到！")
-                except PermissionError:
-                    messagebox.showerror("错误", f"没有权限修改文件 {item}！")
-                except Exception as e:
-                    messagebox.showerror("错误", f"发生了一个未知错误: {e}")
-            messagebox.showinfo("成功", "文件名重命名完成！")
-            open_folder(entry_directory.get())
-            list_files(entry_directory.get())
-    else:
-        messagebox.showwarning("警告", "无效的选择，请重新操作！")
+
+    first_new_name = simpledialog.askstring("输入第一个新文件名", "请输入第一个新文件名（例如：图片_1）：")
+    if not first_new_name:
+        return
+
+    try:
+        prefix, start_num_str = first_new_name.rsplit("_", 1)
+        start_num = int(start_num_str)
+    except ValueError:
+        messagebox.showerror("错误", "输入的文件名格式不正确，请使用类似 '图片_1' 的格式。")
+        return
+
+    ext_groups = {}
+    for item in selected:
+        if os.path.isfile(item):
+            ext = os.path.splitext(item)[1]
+            if ext not in ext_groups:
+                ext_groups[ext] = []
+            ext_groups[ext].append(item)
+
+    for ext, files in ext_groups.items():
+        num = start_num
+        for file in files:
+            new_name = f"{prefix}_{num}{ext}"
+            new_file_path = os.path.join(os.path.dirname(file), new_name)
+            try:
+                os.rename(file, new_file_path)
+                print(f"Renamed {file} to {new_file_path}")
+                num += 1
+            except FileNotFoundError:
+                messagebox.showerror("错误", f"文件 {file} 未找到！")
+            except PermissionError:
+                messagebox.showerror("错误", f"没有权限修改文件 {file}！")
+            except Exception as e:
+                messagebox.showerror("错误", f"发生了一个未知错误: {e}")
+
+    messagebox.showinfo("成功", "文件名重命名完成！")
+    open_folder(entry_directory.get())
+    list_files(entry_directory.get())
 
 
 def open_folder(folder_path):
@@ -263,7 +254,7 @@ frame_tree.grid(row=1, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
 root.rowconfigure(1, weight=1)
 root.columnconfigure(0, weight=1)
 
-columns = ("扩展名", "文件名")
+columns = ("序号", "扩展名", "文件名")
 # 创建 Treeview 时使用 style
 style = ttk.Style()
 style.configure("Custom.Treeview.Heading", background="#e0e0e0", foreground="black", font=("微软雅黑", 11))
@@ -273,7 +264,9 @@ tree = ttk.Treeview(frame_tree, columns=columns, show="headings", selectmode="ex
 
 for col in columns:
     tree.heading(col, text=col)
-    if col == "扩展名":
+    if col == "序号":
+        tree.column(col, width=50, anchor=tk.CENTER)
+    elif col == "扩展名":
         tree.column(col, width=100, anchor=tk.CENTER)
     else:
         tree.column(col, width=150)
