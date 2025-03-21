@@ -1,6 +1,6 @@
 # 批量文件重命名工具 
 ![Python](https://img.shields.io/badge/Python-3.12+-blue.svg)
-![License](https://img.shields.io/badge/License-MIT-green.svg)
+
 
 ## 🌟 项目简介
 在日常的文件管理工作中，批量修改文件名和扩展名是一项常见却繁琐的任务。本工具旨在简化这一过程，为用户提供高效、便捷的批量文件重命名解决方案，节省宝贵时间，提升工作效率。
